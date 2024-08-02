@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,29 +24,30 @@ namespace Connect.Generator
             _rightEdge.SetActive(false);
         }
 
-        public void SetEdge(int colorId, Vector2Int direction)
+        public void SetEdge(int colorId, Point direction)
         {
             GameObject connectedNode = _point;
 
-            if (direction == Vector2Int.up)
+            if (direction == Point.up)
             {
                 connectedNode = _topEdge;
             }
-            else if (direction == Vector2Int.down)
+            else if (direction == Point.down)
             {
                 connectedNode = _bottomEdge;
             }
-            else if (direction == Vector2Int.right)
+            else if (direction == Point.right)
             {
                 connectedNode = _rightEdge;
             }
-            else if (direction == Vector2Int.left)
+            else if (direction == Point.left)
             {
                 connectedNode = _leftEdge;
             }
 
             connectedNode.SetActive(true);
-            connectedNode.GetComponent<SpriteRenderer>().color = NodeColors[colorId];
+            connectedNode.GetComponent<SpriteRenderer>().color = NodeColors[colorId % NodeColors.Count];
         }
+
     }
 }
