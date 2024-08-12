@@ -80,8 +80,8 @@ namespace Connect.Generator.AllNeighbours
         private IEnumerator SolvePaths()
         {
             bool canSolve = true;
-            int integerPerFrame = (int)(speedMultiplier / speed);
-            int currentInteger = 0;
+            int iterationPerFrame = (int)(speedMultiplier / speed);
+            int currentIteration = 0;
 
             while (canSolve)
             {
@@ -134,11 +134,11 @@ namespace Connect.Generator.AllNeighbours
 
                     item.IsSolved = true;
 
-                    currentInteger++;
+                    currentIteration++;
 
-                    if (currentInteger > integerPerFrame)
+                    if (currentIteration > iterationPerFrame)
                     {
-                        currentInteger = 0;
+                        currentIteration = 0;
                         yield return new WaitForSeconds(speed);
 
                     }

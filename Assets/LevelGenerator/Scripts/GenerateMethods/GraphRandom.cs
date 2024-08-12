@@ -1,26 +1,23 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
 using TMPro;
-using Unity.Collections;
 using UnityEngine;
 
-namespace Connect.Generator.VectorToPoint
+namespace Connect.Generator.GraphRandom
 {
-    public class VectorToPoint : MonoBehaviour, GenerateMethod
+    public class GraphRandom : MonoBehaviour, GenerateMethod
     {
-        [SerializeField] private TMP_Text _timeText, _gridCountText;
+        [SerializeField] private TMP_Text _timerText, _gridCountText;
         [SerializeField] private bool _showOnlyResult;
         private GridList checkingGrid;
         private LevelGenerator Instance;
         private bool isCreating;
+        private GridNode CurrentNode;
 
         private HashSet<GridList> GridSet;
 
-        [SerializeField] private float speedMultiplier;
+        [SerializeField] private float speedMultipler;
         [SerializeField] private float speed;
         private long checkingGridCount;
 
@@ -40,28 +37,10 @@ namespace Connect.Generator.VectorToPoint
 
         private IEnumerator GeneratePaths()
         {
-            GridData tempGrid = new GridData(0, 0, Instance.levelSize);
-            GridList tempList = new GridList(tempGrid);
-            checkingGrid = tempList;
-            AddToGridSet(tempList);
-
-            GridList addList = checkingGrid;
-
-            for (int i = 0; i < Instance.levelSize; i++)
-            {
-                for (int j = 0; j < Instance.levelSize; j++)
-                {
-                    tempGrid = new GridData(i, j, Instance.levelSize);
-                    tempList = new GridList(tempGrid);
-
-                    if (!GridSet.Contains(tempList))
-                    {
-                        addList.Next = tempList;
-                        addList = addList.Next;
-                        AddToGridSet(tempList);
-                    }
-                }
-            }
+            CurrentNode = new GridNode(Instance.levelSize);
+            CurrentNode = CurrentNode.Next();
+            checkingGrid = new GridList(CurrentNode.Data);
+            AddToGridSet(checkingGrid);
 
             StartCoroutine(SolvePaths());
 
@@ -77,14 +56,13 @@ namespace Connect.Generator.VectorToPoint
                     {
                         yield break;
                     }
-
                     showList = showList.Next;
                 }
 
                 Instance.RenderGrid(showList.Data._grid);
                 count++;
 
-                _timeText.text = count.ToString();
+                _timerText.text = count.ToString();
                 _gridCountText.text = checkingGridCount.ToString();
 
                 showList = showList.Next;
@@ -98,78 +76,50 @@ namespace Connect.Generator.VectorToPoint
             }
         }
 
-        private List<Point> directionChecks = new List<Point>()
-        { Point.up, Point.down, Point.left, Point.right};
-
         private IEnumerator SolvePaths()
         {
-            bool canSolve = true;
-            int iterationPerFrame = (int)speedMultiplier;
+            int iterationPerFrame = (int)(speedMultipler);
             int currentIteration = 0;
 
             GridList solveList = checkingGrid;
-            GridList resultGridList;
-            GridData item;
+            GridList tempList;
+            GridNode nextNode;
 
-            GridData tempGrid;
-            GridList tempList, connectList;
-            Point checkingDirection;
-
-            while (canSolve)
+            while (CurrentNode != null)
             {
-                resultGridList = solveList;
+                nextNode = CurrentNode.Next();
 
-                if (solveList == null)
+                if (nextNode != null)
                 {
-                    canSolve = false;
-                    yield break;
-                }
+                    tempList = new GridList(nextNode.Data);
 
-                item = resultGridList.Data;
-
-                foreach (var direction in directionChecks)
-                {
-                    checkingDirection = item.CurrentPos + direction;
-
-                    if (item.IsInsideGrid(checkingDirection)
-                        && item._grid[checkingDirection.x, checkingDirection.y] == -1
-                        && item.IsNotNeighbours(checkingDirection))
+                    if (!GridSet.Contains(tempList))
                     {
-                        tempGrid = new GridData(checkingDirection.x,
-                                   checkingDirection.y, item.ColorId, item);
-                        tempList = new GridList(tempGrid);
-
-                        if (!GridSet.Contains(tempList))
+                        AddToGridSet(tempList);
+                        CurrentNode = nextNode;
+                    }
+                    else
+                    {
+                        CurrentNode = CurrentNode.Previous;
+                        if (CurrentNode == null)
                         {
-                            connectList = resultGridList.Next;
-                            resultGridList.Next = tempList;
-                            tempList.Next = connectList;
-                            resultGridList = resultGridList.Next;
-                            AddToGridSet(tempList);
+                            yield break;
                         }
+                        tempList = new GridList(CurrentNode.Data);
                     }
                 }
-
-                foreach (var emptyPos in item.EmptyPosition())
+                else
                 {
-                    if (item.FlowLength() > 2)
+                    CurrentNode = CurrentNode.Previous;
+                    if (CurrentNode == null)
                     {
-                        tempGrid = new GridData(emptyPos.x, emptyPos.y,
-                                                item.ColorId + 1, item);
-                        tempList = new GridList(tempGrid);
-
-                        if (!GridSet.Contains(tempList))
-                        {
-                            connectList = resultGridList.Next;
-                            resultGridList.Next = tempList;
-                            tempList.Next = connectList;
-                            resultGridList = resultGridList.Next;
-                            AddToGridSet(tempList);
-                        }
+                        yield break;
                     }
+                    tempList = new GridList(CurrentNode.Data);
                 }
 
-                item.IsSolved = true;
+                solveList.Next = tempList;
+                solveList = solveList.Next;
 
                 currentIteration++;
 
@@ -179,14 +129,12 @@ namespace Connect.Generator.VectorToPoint
                     yield return null;
                 }
 
-                solveList = solveList.Next;
             }
         }
 
         private void AddToGridSet(GridList addList)
         {
             GridList tempList;
-
             foreach (var item in addList.Data.GetSimilar())
             {
                 tempList = new GridList(item);
@@ -212,10 +160,101 @@ namespace Connect.Generator.VectorToPoint
         }
     }
 
+    public class GridNode
+    {
+        public GridNode Previous;
+        public GridData Data;
+        private int neighbourIndex, emptyIndex;
+        private List<Point> neighbours, emptyPositions;
+
+        public GridNode(int LevelSize)
+        {
+            Previous = null;
+            Data = new GridData(LevelSize);
+            neighbours = new List<Point>();
+            emptyPositions = new List<Point>();
+            neighbourIndex = 0;
+            emptyIndex = 0;
+            for (int i = 0; i < LevelSize; i++)
+            {
+                for (int j = 0; j < LevelSize; j++)
+                {
+                    emptyPositions.Add(new Point(i, j));
+                }
+            }
+        }
+
+        public GridNode(GridData data, GridNode prev = null)
+        {
+            Data = data;
+            Previous = prev;
+            neighbourIndex = 0;
+            emptyIndex = 0;
+            neighbours = new List<Point>();
+            emptyPositions = new List<Point>();
+            Data.GetResultsList(neighbours, emptyPositions);
+            Shuffle(neighbours);
+            Shuffle(emptyPositions);
+        }
+
+        public GridNode Next()
+        {
+            GridData tempGrid;
+
+            if (neighbourIndex < neighbours.Count && emptyIndex < emptyPositions.Count)
+            {
+                if (UnityEngine.Random.Range(0, GridData.LevelSize) != 0)
+                {
+                    tempGrid = new GridData(neighbours[neighbourIndex].x, 
+                        neighbours[neighbourIndex].y, Data.ColorId, Data);
+                    neighbourIndex++;
+                    return new GridNode(tempGrid, this);
+                }
+                else
+                {
+                    tempGrid = new GridData(emptyPositions[emptyIndex].x,
+                        emptyPositions[emptyIndex].y, Data.ColorId + 1, Data);
+                    emptyIndex++;
+                    return new GridNode(tempGrid, this);
+                }
+            }
+            else if (neighbourIndex < neighbours.Count)
+            {
+                tempGrid = new GridData(neighbours[neighbourIndex].x,
+                        neighbours[neighbourIndex].y, Data.ColorId, Data);
+                neighbourIndex++;
+                return new GridNode(tempGrid, this);
+            }
+            else if (emptyIndex < emptyPositions.Count)
+            {
+                tempGrid = new GridData(emptyPositions[emptyIndex].x,
+                        emptyPositions[emptyIndex].y, Data.ColorId + 1, Data);
+                emptyIndex++;
+                return new GridNode(tempGrid, this);
+            }
+
+            return null;
+        }
+
+        public static void Shuffle(List<Point> list)
+        {
+            System.Random rng = new System.Random(); //rng: ramdom number generator
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = rng.Next(n + 1);
+                var value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
+        }
+    }
+
     public class GridSetComparer : IEqualityComparer<GridList>
     {
         private static Point[] directionChecks = new Point[]
-        { Point.up, Point.left, Point.down, Point.right};
+        { Point.up,Point.left,Point.down,Point.right };
 
         public bool Equals(GridList x, GridList y)
         {
@@ -251,9 +290,9 @@ namespace Connect.Generator.VectorToPoint
                         return false;
                     }
 
-                    bool canCheck = firstGrid[pos.x, pos.y] != -1; 
+                    bool canCheck = firstGrid[pos.x, pos.y] != -1;
 
-                    if (canCheck && colorSwap[firstGrid[pos.x, pos.y]] != -1)
+                    if (canCheck && colorSwap[firstGrid[pos.x, pos.y]] == -1)
                     {
                         colorSwap[firstGrid[pos.x, pos.y]] = secondGrid[pos.x, pos.y];
                     }
@@ -296,8 +335,8 @@ namespace Connect.Generator.VectorToPoint
                         {
                             checkPos = directionChecks[d] + startPos;
                             graph[i, j, d] = obj.Data.IsInsideGrid(checkPos) &&
-                                obj.Data._grid[checkPos.x, checkPos.y] ==
-                                obj.Data._grid[startPos.x, startPos.y];
+                               obj.Data._grid[checkPos.x, checkPos.y] ==
+                               obj.Data._grid[startPos.x, startPos.y];
                         }
                     }
                     else
@@ -309,7 +348,6 @@ namespace Connect.Generator.VectorToPoint
                     }
                 }
             }
-
             return GetHashCodeBool3D(graph);
         }
 
@@ -353,18 +391,36 @@ namespace Connect.Generator.VectorToPoint
 
             return BitConverter.ToString(byteArray).GetHashCode();
         }
+
     }
 
     public class GridData
     {
         private static Point[] directionChecks = new Point[]
-        { Point.up, Point.down, Point.left, Point.right};
+        { Point.up,Point.down,Point.left,Point.right };
 
         public int[,] _grid;
         public bool IsSolved;
         public Point CurrentPos;
         public int ColorId;
         public static int LevelSize;
+
+        public GridData(int levelSize)
+        {
+            _grid = new int[levelSize, levelSize];
+
+            for (int i = 0; i < levelSize; i++)
+            {
+                for (int j = 0; j < levelSize; j++)
+                {
+                    _grid[i, j] = -1;
+                }
+            }
+
+            IsSolved = false;
+            ColorId = -1;
+            LevelSize = levelSize;
+        }
 
         public GridData(int i, int j, int levelSize)
         {
@@ -411,8 +467,7 @@ namespace Connect.Generator.VectorToPoint
         {
             foreach (var item in _grid)
             {
-                if (item == -1)
-                    return false;
+                if (item == -1) return false;
             }
 
             for (int i = 0; i <= ColorId; i++)
@@ -427,20 +482,22 @@ namespace Connect.Generator.VectorToPoint
 
                 if (result < 3)
                     return false;
+
             }
 
             return true;
         }
 
-        public bool IsNotNeighbours(Point pos)
+        public bool IsNotNeighbour(Point pos)
         {
+
             for (int i = 0; i < LevelSize; i++)
             {
                 for (int j = 0; j < LevelSize; j++)
                 {
                     if (_grid[i, j] == ColorId && new Point(i, j) != CurrentPos)
                     {
-                        for (int p = 0; p < LevelSize; p++)
+                        for (int p = 0; p < directionChecks.Length; p++)
                         {
                             if (pos - new Point(i, j) == directionChecks[p])
                             {
@@ -454,28 +511,9 @@ namespace Connect.Generator.VectorToPoint
             return true;
         }
 
-        public List<Point> EmptyPosition()
-        {
-            List<Point> result = new List<Point>();
-
-            for (int a = 0; a < LevelSize; a++)
-            {
-                for (int b = 0; b < LevelSize; b++)
-                {
-                    if (_grid[a, b] == -1)
-                    {
-                        result.Add(new Point(a, b));
-                    }
-                }
-            }
-
-            return result;
-        }
-
         public int FlowLength()
         {
             int result = 0;
-
             foreach (var item in _grid)
             {
                 if (item == ColorId)
@@ -504,6 +542,119 @@ namespace Connect.Generator.VectorToPoint
             return result;
         }
 
+        public void GetResultsList(List<Point> neighbors, List<Point> emptyPositions)
+        {
+            int[,] emptyGrid = new int[LevelSize, LevelSize];
+            for (int i = 0; i < LevelSize; i++)
+            {
+                for (int j = 0; j < LevelSize; j++)
+                {
+                    emptyGrid[i, j] = -1;
+                }
+            }
+
+            for (int i = 0; i < LevelSize; i++)
+            {
+                for (int j = 0; j < LevelSize; j++)
+                {
+                    if (_grid[i, j] == -1)
+                    {
+                        emptyGrid[i, j] = 0;
+                        for (int k = 0; k < directionChecks.Length; k++)
+                        {
+                            Point tempPoint = new Point(directionChecks[k].x + i, directionChecks[k].y + j);
+                            if (IsInsideGrid(tempPoint) && _grid[tempPoint.x, tempPoint.y] == -1)
+                            {
+                                emptyGrid[i, j]++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            List<Point> zeroNeighbours = new List<Point>();
+            List<Point> allNeighbours = new List<Point>();
+
+            for (int i = 0; i < directionChecks.Length; i++)
+            {
+                Point tempPoint = CurrentPos + directionChecks[i];
+                if (IsInsideGrid(tempPoint) &&
+                    IsNotNeighbour(tempPoint) &&
+                    emptyGrid[tempPoint.x, tempPoint.y] != -1)
+                {
+                    if (emptyGrid[tempPoint.x, tempPoint.y] == 0)
+                    {
+                        zeroNeighbours.Add(tempPoint);
+                        emptyGrid[tempPoint.x, tempPoint.y] = -1;
+                    }
+                    allNeighbours.Add(tempPoint);
+                }
+            }
+
+            List<Point> zeroEmpty = new List<Point>();
+            List<Point> oneEmpty = new List<Point>();
+            List<Point> allEmpty = new List<Point>();
+
+            for (int i = 0; i < LevelSize; i++)
+            {
+                for (int j = 0; j < LevelSize; j++)
+                {
+                    if (emptyGrid[i, j] == 0)
+                    {
+                        zeroEmpty.Add(new Point(i, j));
+                    }
+
+                    if (emptyGrid[i, j] == 1)
+                    {
+                        oneEmpty.Add(new Point(i, j));
+                    }
+
+                    if (emptyGrid[i, j] != -1)
+                    {
+                        allEmpty.Add(new Point(i, j));
+                    }
+                }
+            }
+
+            if (zeroEmpty.Count > 0 || zeroNeighbours.Count > 1)
+            {
+                return;
+            }
+
+            if (zeroNeighbours.Count == 1)
+            {
+                neighbors.Add(zeroNeighbours[0]);
+                return;
+            }
+
+            foreach (var item in allNeighbours)
+            {
+                neighbors.Add(item);
+            }
+
+            if (FlowLength() < 3) return;
+
+            HashSet<Point> minSet = FindMinConnectedSet(new List<Point>(allEmpty));
+
+            if (oneEmpty.Count > 0)
+            {
+                foreach (var item in oneEmpty)
+                {
+                    if (minSet.Contains(item))
+                        emptyPositions.Add(item);
+                }
+
+                return;
+            }
+
+            foreach (var item in allEmpty)
+            {
+                if (minSet.Contains(item))
+                    emptyPositions.Add(item);
+            }
+
+        }
+
         public void Rotate(int rot)
         {
             for (int i = 0; i < rot; i++)
@@ -530,7 +681,7 @@ namespace Connect.Generator.VectorToPoint
 
             for (int i = 0; i < LevelSize; i++)
             {
-                for (int j = 0; j < LevelSize; j++)
+                for (int j = i; j < LevelSize; j++)
                 {
                     int temp = _grid[i, j];
                     _grid[i, j] = _grid[j, i];
@@ -539,6 +690,7 @@ namespace Connect.Generator.VectorToPoint
             }
 
             CurrentPos = Rotate(CurrentPos);
+
         }
 
         private Point Rotate(Point pos)
@@ -549,8 +701,10 @@ namespace Connect.Generator.VectorToPoint
             return result;
         }
 
+
         public void Flip()
         {
+
             int tempColor;
             Point firstPos, secondPos;
 
@@ -574,6 +728,69 @@ namespace Connect.Generator.VectorToPoint
             pos.x = LevelSize - 1 - pos.x;
             return pos;
         }
+
+        public static HashSet<Point> FindMinConnectedSet(List<Point> points)
+        {
+            HashSet<Point> visited = new HashSet<Point>();
+            HashSet<Point> allPoints = new HashSet<Point>(points);
+            List<HashSet<Point>> connectedSet = new List<HashSet<Point>>();
+
+            foreach (var point in points)
+            {
+                if (!visited.Contains(point))
+                {
+                    HashSet<Point> connected = new HashSet<Point>();
+                    Queue<Point> queue = new Queue<Point>();
+
+                    queue.Enqueue(point);
+
+                    while (queue.Count > 0)
+                    {
+                        Point current = queue.Dequeue();
+
+                        if (!visited.Contains(current))
+                        {
+                            connected.Add(current);
+                            visited.Add(current);
+
+                            foreach (var neighbour in GetNeighbours(current))
+                            {
+                                if (!visited.Contains(neighbour) && allPoints.Contains(neighbour))
+                                {
+                                    queue.Enqueue(neighbour);
+                                }
+                            }
+                        }
+                    }
+
+                    connectedSet.Add(connected);
+                }
+            }
+
+            HashSet<Point> minSet = null;
+
+            foreach (var item in connectedSet)
+            {
+                if (minSet == null || item.Count < minSet.Count)
+                {
+                    minSet = item;
+                }
+            }
+
+            return minSet;
+        }
+
+        private static List<Point> GetNeighbours(Point point)
+        {
+            List<Point> result = new List<Point>()
+            {
+                new Point(point.x + 1, point.y + 1),
+                new Point(point.x + 1, point.y - 1),
+                new Point(point.x - 1, point.y + 1),
+                new Point(point.x - 1, point.y - 1)
+            };
+
+            return result;
+        }
     }
 }
-
