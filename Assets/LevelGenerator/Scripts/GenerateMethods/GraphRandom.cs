@@ -6,14 +6,15 @@ using UnityEngine;
 
 namespace Connect.Generator.GraphRandom
 {
-    public class GraphRandom : MonoBehaviour, GenerateMethod
-    {
+	public class GraphRandom : MonoBehaviour,GenerateMethod
+	{
         [SerializeField] private TMP_Text _timerText, _gridCountText;
         [SerializeField] private bool _showOnlyResult;
         private GridList checkingGrid;
         private LevelGenerator Instance;
         private bool isCreating;
         private GridNode CurrentNode;
+
 
         private HashSet<GridList> GridSet;
 
@@ -40,7 +41,7 @@ namespace Connect.Generator.GraphRandom
             CurrentNode = new GridNode(Instance.levelSize);
             CurrentNode = CurrentNode.Next();
             checkingGrid = new GridList(CurrentNode.Data);
-            AddToGridSet(checkingGrid);
+            AddToGridSet(checkingGrid);                        
 
             StartCoroutine(SolvePaths());
 
@@ -50,6 +51,7 @@ namespace Connect.Generator.GraphRandom
 
             while (isCreating)
             {
+
                 while (_showOnlyResult && !showList.Data.IsGridComplete())
                 {
                     if (showList.Next == null)
@@ -59,6 +61,7 @@ namespace Connect.Generator.GraphRandom
                     showList = showList.Next;
                 }
 
+
                 Instance.RenderGrid(showList.Data._grid);
                 count++;
 
@@ -66,6 +69,7 @@ namespace Connect.Generator.GraphRandom
                 _gridCountText.text = checkingGridCount.ToString();
 
                 showList = showList.Next;
+
 
                 if (showList == null)
                 {
@@ -78,57 +82,50 @@ namespace Connect.Generator.GraphRandom
 
         private IEnumerator SolvePaths()
         {
-            int iterationPerFrame = (int)(speedMultipler);
-            int currentIteration = 0;
+            int iterPerFrame = (int)(speedMultipler);
+            int currentIter = 0;
 
-            GridList solveList = checkingGrid;
+            GridList solveList = checkingGrid;            
             GridList tempList;
             GridNode nextNode;
 
             while (CurrentNode != null)
             {
+
                 nextNode = CurrentNode.Next();
 
-                if (nextNode != null)
+                if(nextNode != null)
                 {
                     tempList = new GridList(nextNode.Data);
-
-                    if (!GridSet.Contains(tempList))
+                    if(!GridSet.Contains(tempList))
                     {
                         AddToGridSet(tempList);
                         CurrentNode = nextNode;
                     }
                     else
                     {
-                        CurrentNode = CurrentNode.Previous;
-                        if (CurrentNode == null)
-                        {
-                            yield break;
-                        }
+                        CurrentNode = CurrentNode.Prev;
+                        if (CurrentNode == null) yield break;
                         tempList = new GridList(CurrentNode.Data);
                     }
                 }
                 else
                 {
-                    CurrentNode = CurrentNode.Previous;
-                    if (CurrentNode == null)
-                    {
-                        yield break;
-                    }
+                    CurrentNode = CurrentNode.Prev;
+                    if (CurrentNode == null) yield break;
                     tempList = new GridList(CurrentNode.Data);
                 }
 
                 solveList.Next = tempList;
                 solveList = solveList.Next;
 
-                currentIteration++;
+                currentIter++;
 
-                if (currentIteration > iterationPerFrame * Time.deltaTime)
+                if (currentIter > iterPerFrame * Time.deltaTime)
                 {
-                    currentIteration = 0;
+                    currentIter = 0;
                     yield return null;
                 }
-
             }
         }
 
@@ -162,18 +159,17 @@ namespace Connect.Generator.GraphRandom
 
     public class GridNode
     {
-        public GridNode Previous;
+        public GridNode Prev;
         public GridData Data;
-        private int neighbourIndex, emptyIndex;
-        private List<Point> neighbours, emptyPositions;
-
+        private int neighborIndex, emptyIndex;
+        private List<Point> neighbors, emptyPositions;
         public GridNode(int LevelSize)
         {
-            Previous = null;
+            Prev = null;
             Data = new GridData(LevelSize);
-            neighbours = new List<Point>();
+            neighbors = new List<Point>();
             emptyPositions = new List<Point>();
-            neighbourIndex = 0;
+            neighborIndex = 0;
             emptyIndex = 0;
             for (int i = 0; i < LevelSize; i++)
             {
@@ -184,16 +180,16 @@ namespace Connect.Generator.GraphRandom
             }
         }
 
-        public GridNode(GridData data, GridNode prev = null)
+        public GridNode(GridData data,GridNode prev = null)
         {
             Data = data;
-            Previous = prev;
-            neighbourIndex = 0;
+            Prev = prev;
+            neighborIndex = 0;
             emptyIndex = 0;
-            neighbours = new List<Point>();
+            neighbors = new List<Point>();
             emptyPositions = new List<Point>();
-            Data.GetResultsList(neighbours, emptyPositions);
-            Shuffle(neighbours);
+            Data.GetResultsList(neighbors, emptyPositions);
+            Shuffle(neighbors);
             Shuffle(emptyPositions);
         }
 
@@ -201,34 +197,30 @@ namespace Connect.Generator.GraphRandom
         {
             GridData tempGrid;
 
-            if (neighbourIndex < neighbours.Count && emptyIndex < emptyPositions.Count)
+            if(neighborIndex < neighbors.Count && emptyIndex < emptyPositions.Count)
             {
-                if (UnityEngine.Random.Range(0, GridData.LevelSize) != 0)
+                if(UnityEngine.Random.Range(0,GridData.LevelSize) != 0)
                 {
-                    tempGrid = new GridData(neighbours[neighbourIndex].x, 
-                        neighbours[neighbourIndex].y, Data.ColorId, Data);
-                    neighbourIndex++;
+                    tempGrid = new GridData(neighbors[neighborIndex].x, neighbors[neighborIndex].y,Data.ColorId,Data);
+                    neighborIndex++;
                     return new GridNode(tempGrid, this);
                 }
                 else
                 {
-                    tempGrid = new GridData(emptyPositions[emptyIndex].x,
-                        emptyPositions[emptyIndex].y, Data.ColorId + 1, Data);
+                    tempGrid = new GridData(emptyPositions[emptyIndex].x, emptyPositions[emptyIndex].y, Data.ColorId + 1, Data);
                     emptyIndex++;
                     return new GridNode(tempGrid, this);
                 }
             }
-            else if (neighbourIndex < neighbours.Count)
+            else if(neighborIndex < neighbors.Count)
             {
-                tempGrid = new GridData(neighbours[neighbourIndex].x,
-                        neighbours[neighbourIndex].y, Data.ColorId, Data);
-                neighbourIndex++;
+                tempGrid = new GridData(neighbors[neighborIndex].x, neighbors[neighborIndex].y, Data.ColorId, Data);
+                neighborIndex++;
                 return new GridNode(tempGrid, this);
             }
-            else if (emptyIndex < emptyPositions.Count)
+            else if(emptyIndex < emptyPositions.Count)
             {
-                tempGrid = new GridData(emptyPositions[emptyIndex].x,
-                        emptyPositions[emptyIndex].y, Data.ColorId + 1, Data);
+                tempGrid = new GridData(emptyPositions[emptyIndex].x, emptyPositions[emptyIndex].y, Data.ColorId + 1, Data);
                 emptyIndex++;
                 return new GridNode(tempGrid, this);
             }
@@ -238,12 +230,12 @@ namespace Connect.Generator.GraphRandom
 
         public static void Shuffle(List<Point> list)
         {
-            System.Random rng = new System.Random(); //rng: ramdom number generator
+            System.Random rng = new System.Random();
             int n = list.Count;
-            while (n > 1)
+            while(n > 1)
             {
                 n--;
-                int k = rng.Next(n + 1);
+                int k = rng.Next(n+1);
                 var value = list[k];
                 list[k] = list[n];
                 list[n] = value;
@@ -394,6 +386,7 @@ namespace Connect.Generator.GraphRandom
 
     }
 
+
     public class GridData
     {
         private static Point[] directionChecks = new Point[]
@@ -407,13 +400,13 @@ namespace Connect.Generator.GraphRandom
 
         public GridData(int levelSize)
         {
-            _grid = new int[levelSize, levelSize];
+            _grid = new int[levelSize,levelSize];
 
             for (int i = 0; i < levelSize; i++)
             {
                 for (int j = 0; j < levelSize; j++)
                 {
-                    _grid[i, j] = -1;
+                    _grid[i,j] = -1;
                 }
             }
 
@@ -737,27 +730,27 @@ namespace Connect.Generator.GraphRandom
 
             foreach (var point in points)
             {
-                if (!visited.Contains(point))
+                if(!visited.Contains(point))
                 {
                     HashSet<Point> connected = new HashSet<Point>();
                     Queue<Point> queue = new Queue<Point>();
 
                     queue.Enqueue(point);
 
-                    while (queue.Count > 0)
+                    while(queue.Count > 0)
                     {
                         Point current = queue.Dequeue();
 
-                        if (!visited.Contains(current))
+                        if(!visited.Contains(current))
                         {
                             connected.Add(current);
                             visited.Add(current);
 
-                            foreach (var neighbour in GetNeighbours(current))
+                            foreach (var neighbor in GetNeighbors(current))
                             {
-                                if (!visited.Contains(neighbour) && allPoints.Contains(neighbour))
+                                if(!visited.Contains(neighbor) && allPoints.Contains(neighbor))
                                 {
-                                    queue.Enqueue(neighbour);
+                                    queue.Enqueue(neighbor);
                                 }
                             }
                         }
@@ -771,7 +764,7 @@ namespace Connect.Generator.GraphRandom
 
             foreach (var item in connectedSet)
             {
-                if (minSet == null || item.Count < minSet.Count)
+                if(minSet == null || item.Count < minSet.Count)
                 {
                     minSet = item;
                 }
@@ -780,14 +773,14 @@ namespace Connect.Generator.GraphRandom
             return minSet;
         }
 
-        private static List<Point> GetNeighbours(Point point)
+        private static List<Point> GetNeighbors(Point point)
         {
-            List<Point> result = new List<Point>()
+            List<Point> result = new List<Point>
             {
-                new Point(point.x + 1, point.y + 1),
-                new Point(point.x + 1, point.y - 1),
-                new Point(point.x - 1, point.y + 1),
-                new Point(point.x - 1, point.y - 1)
+                new Point(point.x, point.y + 1),
+                new Point(point.x, point.y - 1),
+                new Point(point.x + 1, point.y),
+                new Point(point.x - 1, point.y)
             };
 
             return result;

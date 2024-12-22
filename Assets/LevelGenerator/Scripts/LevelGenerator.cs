@@ -1,10 +1,9 @@
+using Connect.Common;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using Connect.Common;
+using TMPro;
 using UnityEditor;
-using System.Transactions;
-using System;
+using UnityEngine;
 
 namespace Connect.Generator
 {
@@ -48,13 +47,13 @@ namespace Connect.Generator
 
         [SerializeField] private NodeRenderer _nodePrefab;
 
-        private Dictionary<Point, NodeRenderer> nodeGrid;
+        public Dictionary<Point, NodeRenderer> nodeGrid;
         private NodeRenderer[,] nodeArray;
 
         private void SpawnNodes()
         {
             nodeGrid = new Dictionary<Point, NodeRenderer>();
-            nodeArray = new NodeRenderer[levelSize, levelSize];
+            nodeArray = new NodeRenderer[levelSize,levelSize];
             Vector3 spawnPos;
             NodeRenderer spawnedNode;
 
@@ -66,11 +65,12 @@ namespace Connect.Generator
                     spawnedNode = Instantiate(_nodePrefab, spawnPos, Quaternion.identity);
                     spawnedNode.Init();
                     nodeGrid.Add(new Point(i, j), spawnedNode);
-                    nodeArray[i, j] = spawnedNode;
+                    nodeArray[i,j] = spawnedNode;
                     spawnedNode.gameObject.name = i.ToString() + j.ToString();
                 }
             }
         }
+
 
         #endregion
 
@@ -93,7 +93,7 @@ namespace Connect.Generator
             }
             else
             {
-
+                GenerateAll();
             }
 
             _simulateButton.SetActive(false);
@@ -102,13 +102,13 @@ namespace Connect.Generator
         [SerializeField] private LevelList _allLevelList;
         private Dictionary<string, LevelData> Levels;
 
+        #region GENERATE_SINGLE_LEVEL
         private void GenerateDefault()
         {
             GenerateLevelData();
         }
 
-        private LevelData currentLevelData;
-        [SerializeField] private GenerateMethod currentMethod;
+        public LevelData currentLevelData;
 
         private void GenerateLevelData(int level = 0)
         {
@@ -118,11 +118,10 @@ namespace Connect.Generator
             {
 #if UNITY_EDITOR
                 currentLevelData = ScriptableObject.CreateInstance<LevelData>();
-                AssetDatabase.CreateAsset(currentLevelData, "Assets/Common/Prefabs/Levels/"
-                    + currentLevelName + ".asset");
+                AssetDatabase.CreateAsset(currentLevelData, "Assets/Common/Prefabs/Levels/" +
+                    currentLevelName + ".asset");
                 AssetDatabase.SaveAssets();
 #endif
-
                 Levels[currentLevelName] = currentLevelData;
                 _allLevelList.Levels.Add(currentLevelData);
             }
@@ -136,10 +135,59 @@ namespace Connect.Generator
 
         #endregion
 
+        #region GENERATE_ALL_LEVELS
+
+        [SerializeField] private TMP_Text _counterText;
+        public GridData result;
+
+        private void GenerateAll()
+        {
+            StartCoroutine(GenerateAllLevels());
+        }
+
+        private IEnumerator GenerateAllLevels()
+        {
+            for (int i = 1; i < 51; i++)
+            {
+                yield return GenerateSingleLevelData(i);
+                _counterText.text = i.ToString();
+                yield return null;
+            }
+        }
+
+        private IEnumerator GenerateSingleLevelData(int level = 0)
+        {
+            string currentLevelName = "Level" + stage.ToString() + level.ToString();
+
+            if (!Levels.ContainsKey(currentLevelName))
+            {
+#if UNITY_EDITOR
+                currentLevelData = ScriptableObject.CreateInstance<LevelData>();
+                AssetDatabase.CreateAsset(currentLevelData, "Assets/Common/Prefabs/Levels/" +
+                    currentLevelName + ".asset");
+                AssetDatabase.SaveAssets();
+#endif
+                Levels[currentLevelName] = currentLevelData;
+                _allLevelList.Levels.Add(currentLevelData);
+            }
+
+            currentLevelData = Levels[currentLevelName];
+            currentLevelData.LevelName = currentLevelName;
+            currentLevelData.Edges = new List<Edge>();
+
+            yield return GetComponent<LevelGeneratorSingle>().Generate();
+            currentLevelData.Edges = result.Edges;
+            RenderGrid(result._grid);
+        }
+
+        #endregion
+
+        #endregion
+
         #region NODE_RENDERING
 
         private List<Point> directions = new List<Point>()
-        { Point.up, Point.down, Point.left, Point.right};
+        { Point.up,Point.down,Point.left,Point.right};
 
         public void RenderGrid(Dictionary<Point, int> grid)
         {
@@ -173,7 +221,9 @@ namespace Connect.Generator
         }
 
         private Point[] neighbourPoints = new Point[]
-        { Point.up, Point.left, Point.down, Point.right} ;
+        {
+            Point.up,Point.left,Point.down, Point.right
+        };
 
         public void RenderGrid(int[,] grid)
         {
@@ -184,25 +234,26 @@ namespace Connect.Generator
             {
                 for (int j = 0; j < levelSize; j++)
                 {
-                    nodeArray[i, j].Init();
+                    nodeArray[i,j].Init();
                     currentColor = grid[i, j];
                     numOfConnectedNodes = 0;
 
-                    if (currentColor != -1)
+                    if(currentColor != -1)
                     {
                         for (int p = 0; p < neighbourPoints.Length; p++)
                         {
-                            Point tempPoint = new Point(i, j) + neighbourPoints[p];
+                            Point tempPoint = new Point(i,j) + neighbourPoints[p];
 
-                            if (tempPoint.IsPointValid(levelSize) &&
-                                grid[tempPoint.x, tempPoint.y] == currentColor)
+                            if(tempPoint.IsPointValid(levelSize) &&
+                                grid[tempPoint.x,tempPoint.y] == currentColor                                
+                                )
                             {
-                                nodeArray[i, j].SetEdge(currentColor, neighbourPoints[p]);
+                                nodeArray[i,j].SetEdge(currentColor, neighbourPoints[p]);
                                 numOfConnectedNodes++;
                             }
                         }
 
-                        if (numOfConnectedNodes <= 1)
+                        if(numOfConnectedNodes <= 1)
                         {
                             nodeArray[i, j].SetEdge(currentColor, Point.zero);
                         }
@@ -212,6 +263,7 @@ namespace Connect.Generator
         }
 
         #endregion
+
     }
 
     public interface GenerateMethod
@@ -224,7 +276,7 @@ namespace Connect.Generator
         public int x;
         public int y;
 
-        public Point(int x, int y)
+        public Point(int x,int y)
         {
             this.x = x;
             this.y = y;
@@ -232,7 +284,7 @@ namespace Connect.Generator
 
         public bool IsPointValid(int maxCount)
         {
-            return x < maxCount && y < maxCount && x > -1 && y > -1;
+            return x < maxCount && y < maxCount && x > -1 && y > -1;    
         }
 
         public static Point operator +(Point p1, Point p2)
@@ -245,14 +297,13 @@ namespace Connect.Generator
             return new Point(p1.x - p2.x, p1.y - p2.y);
         }
 
-        public static Point up => new Point(0, 1);
-        public static Point left => new Point(-1, 0);
-        public static Point down => new Point(0, -1);
+        public static Point up => new Point(0,1);
+        public static Point left => new Point(-1,0);
+        public static Point down => new Point(0,-1);
         public static Point right => new Point(1, 0);
         public static Point zero => new Point(0, 0);
         public static bool operator ==(Point p1, Point p2) => p1.x == p2.x && p1.y == p2.y;
         public static bool operator !=(Point p1, Point p2) => p1.x != p2.x || p1.y != p2.y;
-
         public override bool Equals(object obj)
         {
             Point a = (Point)obj;
@@ -260,7 +311,8 @@ namespace Connect.Generator
         }
         public override int GetHashCode()
         {
-            return (100 * x + y).GetHashCode();
+            return (100*x + y).GetHashCode();
         }
+
     }
 }

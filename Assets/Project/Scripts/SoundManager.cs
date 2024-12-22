@@ -1,18 +1,16 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Connect.Core
 {
     public class SoundManager : MonoBehaviour
     {
-        public static SoundManager instance;
+        public static SoundManager Instance;
 
         private void Awake()
         {
-            if (instance == null)
+            if (Instance == null)
             {
-                instance = this;
+                Instance = this;
                 DontDestroyOnLoad(gameObject);
                 return;
             }
@@ -28,5 +26,5 @@ namespace Connect.Core
         {
             _effectSource.PlayOneShot(clip);
         }
-    }
+    } 
 }

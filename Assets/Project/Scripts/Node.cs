@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +5,7 @@ namespace Connect.Core
 {
     public class Node : MonoBehaviour
     {
+
         [SerializeField] private GameObject _point;
         [SerializeField] private GameObject _topEdge;
         [SerializeField] private GameObject _bottomEdge;
@@ -22,7 +21,7 @@ namespace Connect.Core
         {
             get
             {
-                if (_point.activeSelf)
+                if(_point.activeSelf)
                 {
                     return ConnectedNodes.Count == 1;
                 }
@@ -35,7 +34,7 @@ namespace Connect.Core
         {
             get
             {
-                if (_point.activeSelf)
+                if(_point.activeSelf)
                 {
                     return true;
                 }
@@ -46,7 +45,8 @@ namespace Connect.Core
 
         public bool IsEndNode => _point.activeSelf;
 
-        public Vector2Int Pos2D { get; set; }
+        public Vector2Int Pos2D 
+        { get; set; }
 
         public void Init()
         {
@@ -55,6 +55,7 @@ namespace Connect.Core
             _bottomEdge.SetActive(false);
             _leftEdge.SetActive(false);
             _rightEdge.SetActive(false);
+            _highLight.SetActive(false);
             ConnectedEdges = new Dictionary<Node, GameObject>();
             ConnectedNodes = new List<Node>();
         }
@@ -64,24 +65,24 @@ namespace Connect.Core
             colorId = colorIdForSpawnedNode;
             _point.SetActive(true);
             _point.GetComponent<SpriteRenderer>().color =
-                GameplayManager.instance.NodeColors[colorId];
+                GameplayManager.Instance.NodeColors[colorId % GameplayManager.Instance.NodeColors.Count];
         }
 
         public void SetEdge(Vector2Int offset, Node node)
         {
-            if (offset == Vector2Int.up)
+            if(offset == Vector2Int.up)
             {
                 ConnectedEdges[node] = _topEdge;
                 return;
             }
 
-            if (offset == Vector2Int.down)
+            if(offset == Vector2Int.down) 
             {
                 ConnectedEdges[node] = _bottomEdge;
                 return;
             }
 
-            if (offset == Vector2Int.right)
+            if(offset == Vector2Int.right) 
             {
                 ConnectedEdges[node] = _rightEdge;
                 return;
@@ -92,21 +93,21 @@ namespace Connect.Core
                 ConnectedEdges[node] = _leftEdge;
                 return;
             }
-        }
+        }        
 
-        [HideInInspector] public List<Node> ConnectedNodes;
+        [HideInInspector ]public List<Node> ConnectedNodes;
 
         public void UpdateInput(Node connectedNode)
         {
             //Invalid Input
-            if (!ConnectedEdges.ContainsKey(connectedNode))
+            if(!ConnectedEdges.ContainsKey(connectedNode))
             {
                 return;
             }
 
             //Connected Node already exist
             //Delete the Edge and the parts
-            if (ConnectedNodes.Contains(connectedNode))
+            if(ConnectedNodes.Contains(connectedNode))
             {
                 ConnectedNodes.Remove(connectedNode);
                 connectedNode.ConnectedNodes.Remove(this);
@@ -117,11 +118,11 @@ namespace Connect.Core
             }
 
             //Start Node has 2 Edges
-            if (ConnectedNodes.Count == 2)
+            if(ConnectedNodes.Count == 2)
             {
                 Node tempNode = ConnectedNodes[0];
 
-                if (!tempNode.IsConnectedToEndNode())
+                if(!tempNode.IsConnectedToEndNode())
                 {
                     ConnectedNodes.Remove(tempNode);
                     tempNode.ConnectedNodes.Remove(this);
@@ -137,7 +138,7 @@ namespace Connect.Core
                     tempNode.DeleteNode();
                 }
             }
-
+            
             //End Node has 2 Edges
             if (connectedNode.ConnectedNodes.Count == 2)
             {
@@ -154,8 +155,8 @@ namespace Connect.Core
                 tempNode.DeleteNode();
             }
 
-            //Start Node is Different Color and connected Node has 1 Edge
-            if (connectedNode.ConnectedNodes.Count == 1 && connectedNode.colorId != colorId)
+            //Start Node is Different Color and connected Node Has 1 Edge
+            if(connectedNode.ConnectedNodes.Count == 1 && connectedNode.colorId != colorId) 
             {
                 Node tempNode = connectedNode.ConnectedNodes[0];
                 connectedNode.ConnectedNodes.Remove(tempNode);
@@ -165,7 +166,7 @@ namespace Connect.Core
             }
 
             //Starting is Edge Node and has 1 Edge already
-            if (ConnectedNodes.Count == 1 && IsEndNode)
+            if(ConnectedNodes.Count == 1 && IsEndNode)
             {
                 Node tempNode = ConnectedNodes[0];
                 ConnectedNodes.Remove(tempNode);
@@ -174,8 +175,8 @@ namespace Connect.Core
                 tempNode.DeleteNode();
             }
 
-            //ConnectedNode is Edge and has 1 Edge already
-            if (connectedNode.ConnectedNodes.Count == 1 && connectedNode.IsEndNode)
+            //ConnectedNode is EdgeNode and has 1 Edge already
+            if(connectedNode.ConnectedNodes.Count == 1 && connectedNode.IsEndNode)
             {
                 Node tempNode = connectedNode.ConnectedNodes[0];
                 connectedNode.ConnectedNodes.Remove(tempNode);
@@ -186,8 +187,8 @@ namespace Connect.Core
 
             AddEdge(connectedNode);
 
-            //Don't allow Boxes
-            if (colorId != connectedNode.colorId)
+            //Dont allow Boxes
+            if(colorId != connectedNode.colorId)
             {
                 return;
             }
@@ -195,11 +196,11 @@ namespace Connect.Core
             List<Node> checkingNodes = new List<Node>() { this };
             List<Node> resultNodes = new List<Node>() { this };
 
-            while (checkingNodes.Count > 0)
+            while(checkingNodes.Count > 0)
             {
                 foreach (var item in checkingNodes[0].ConnectedNodes)
                 {
-                    if (!resultNodes.Contains(item))
+                    if(!resultNodes.Contains(item))
                     {
                         resultNodes.Add(item);
                         checkingNodes.Add(item);
@@ -211,7 +212,7 @@ namespace Connect.Core
 
             foreach (var item in resultNodes)
             {
-                if (!item.IsEndNode && item.IsDegreeThree(resultNodes))
+                if(!item.IsEndNode && item.IsDegreeThree(resultNodes))
                 {
                     Node tempNode = item.ConnectedNodes[0];
                     item.ConnectedNodes.Remove(tempNode);
@@ -230,6 +231,7 @@ namespace Connect.Core
                     return;
                 }
             }
+
         }
 
         private void AddEdge(Node connectedNode)
@@ -240,7 +242,7 @@ namespace Connect.Core
             GameObject connectedEdge = ConnectedEdges[connectedNode];
             connectedEdge.SetActive(true);
             connectedEdge.GetComponent<SpriteRenderer>().color =
-                GameplayManager.instance.NodeColors[colorId];
+                GameplayManager.Instance.NodeColors[colorId % GameplayManager.Instance.NodeColors.Count];
         }
 
         private void RemoveEdge(Node node)
@@ -255,15 +257,15 @@ namespace Connect.Core
         {
             Node startNode = this;
 
-            if (startNode.IsConnectedToEndNode())
+            if(startNode.IsConnectedToEndNode())
             {
                 return;
             }
 
-            while (startNode != null)
+            while(startNode != null)
             {
                 Node tempNode = null;
-                if (startNode.ConnectedNodes.Count != 0)
+                if(startNode.ConnectedNodes.Count != 0)
                 {
                     tempNode = startNode.ConnectedNodes[0];
                     startNode.ConnectedNodes.Clear();
@@ -276,19 +278,19 @@ namespace Connect.Core
 
         public bool IsConnectedToEndNode(List<Node> checkedNode = null)
         {
-            if (checkedNode == null)
+            if(checkedNode == null)
             {
                 checkedNode = new List<Node>();
             }
 
-            if (IsEndNode)
+            if(IsEndNode)
             {
                 return true;
             }
 
             foreach (var item in ConnectedNodes)
             {
-                if (!checkedNode.Contains(item))
+                if(!checkedNode.Contains(item))
                 {
                     checkedNode.Add(item);
                     return item.IsConnectedToEndNode(checkedNode);
@@ -298,7 +300,7 @@ namespace Connect.Core
             return false;
         }
 
-        public void SolveHighLight()
+        public void SolveHighlight()
         {
             if (ConnectedNodes.Count == 0)
             {
@@ -306,14 +308,14 @@ namespace Connect.Core
                 return;
             }
 
-            List<Node> checkingNodes = new List<Node>() { this };
-            List<Node> resultNodes = new List<Node>() { this };
+            List<Node> checkingNodes =  new List<Node>() { this };
+            List<Node> resultNodes =new List<Node>() { this };
 
-            while (checkingNodes.Count > 0)
+            while(checkingNodes.Count > 0)
             {
                 foreach (var item in checkingNodes[0].ConnectedNodes)
                 {
-                    if (!resultNodes.Contains(item))
+                    if(!resultNodes.Contains(item))
                     {
                         resultNodes.Add(item);
                         checkingNodes.Add(item);
@@ -327,32 +329,33 @@ namespace Connect.Core
 
             foreach (var item in resultNodes)
             {
-                if (item.IsEndNode)
+                if(item.IsEndNode)
                 {
                     checkingNodes.Add(item);
                 }
             }
 
-            if (checkingNodes.Count == 2)
+            if(checkingNodes.Count == 2)
             {
                 _highLight.SetActive(true);
                 _highLight.GetComponent<SpriteRenderer>().color = 
-                    GameplayManager.instance.GetHighLightColor(colorId);
+                    GameplayManager.Instance.GetHighLightColor(colorId);
             }
             else
             {
                 _highLight.SetActive(false);
             }
+
         }
 
         private List<Vector2Int> directionCheck = new List<Vector2Int>()
-        { 
-            Vector2Int.up, Vector2Int.left, Vector2Int.down, Vector2Int.right
+        {
+            Vector2Int.up,Vector2Int.left,Vector2Int.down,Vector2Int.right
         };
 
         public bool IsDegreeThree(List<Node> resultNodes)
         {
-            bool isDegreeThree = false;
+            bool isdegreethree = false;
 
             int numOfNeighbours = 0;
 
@@ -362,9 +365,9 @@ namespace Connect.Core
                 {
                     Vector2Int checkingPos = Pos2D + directionCheck[(i + j) % directionCheck.Count];
 
-                    if (GameplayManager.instance._nodeGrid.TryGetValue(checkingPos, out Node result))
+                    if(GameplayManager.Instance._nodeGrid.TryGetValue(checkingPos,out Node result))
                     {
-                        if (resultNodes.Contains(result))
+                        if(resultNodes.Contains(result))
                         {
                             numOfNeighbours++;
                         }
@@ -375,7 +378,7 @@ namespace Connect.Core
                     }
                 }
 
-                if (numOfNeighbours == 3)
+                if(numOfNeighbours == 3)
                 {
                     break;
                 }
@@ -383,13 +386,12 @@ namespace Connect.Core
                 numOfNeighbours = 0;
             }
 
-            if (numOfNeighbours >= 3)
+            if(numOfNeighbours >= 3)
             {
-                isDegreeThree = true;
+                isdegreethree = true;
             }
 
-            return false;
+            return isdegreethree;
         }
-
-    }
+    } 
 }

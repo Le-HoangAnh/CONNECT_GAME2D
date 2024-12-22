@@ -103,8 +103,8 @@ namespace Connect.Generator.BranchReduction
         private IEnumerator SolvePaths()
         {
             bool canSolve = true;
-            int iterationPerFrame = (int)(speedMultipler);
-            int currentIteration = 0;
+            int iterPerFrame = (int)(speedMultipler);
+            int currentIter = 0;
 
             GridList solveList = checkingGrid;
             GridList resultGridList;
@@ -162,11 +162,11 @@ namespace Connect.Generator.BranchReduction
 
                 item.IsSolved = true;
 
-                currentIteration++;
+                currentIter++;
 
-                if (currentIteration > iterationPerFrame * Time.deltaTime)
+                if (currentIter > iterPerFrame * Time.deltaTime)
                 {
-                    currentIteration = 0;
+                    currentIter = 0;
                     yield return null;
                 }
 
@@ -344,6 +344,7 @@ namespace Connect.Generator.BranchReduction
         }
 
     }
+
 
     public class GridData
     {

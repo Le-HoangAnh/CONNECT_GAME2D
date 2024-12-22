@@ -1,6 +1,3 @@
-using Connect.Core;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,7 +10,6 @@ namespace Connect.Core
         [SerializeField] private int _stageNumber;
         [SerializeField] private Button _button;
 
-
         private void Awake()
         {
             _button.onClick.AddListener(ClickedButton);
@@ -25,5 +21,6 @@ namespace Connect.Core
             GameManager.Instance.StageName = _stageName;
             MainMenuManager.Instance.ClickedStage(_stageName, _stageColor);
         }
-    }
+
+    } 
 }

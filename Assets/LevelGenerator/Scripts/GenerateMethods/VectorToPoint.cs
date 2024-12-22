@@ -1,18 +1,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using TMPro;
-using Unity.Collections;
 using UnityEngine;
 
 namespace Connect.Generator.VectorToPoint
 {
-    public class VectorToPoint : MonoBehaviour, GenerateMethod
-    {
-        [SerializeField] private TMP_Text _timeText, _gridCountText;
+	public class VectorToPoint : MonoBehaviour,GenerateMethod
+	{
+        [SerializeField] private TMP_Text _timerText, _gridCountText;
         [SerializeField] private bool _showOnlyResult;
         private GridList checkingGrid;
         private LevelGenerator Instance;
@@ -20,7 +17,7 @@ namespace Connect.Generator.VectorToPoint
 
         private HashSet<GridList> GridSet;
 
-        [SerializeField] private float speedMultiplier;
+        [SerializeField] private float speedMultipler;
         [SerializeField] private float speed;
         private long checkingGridCount;
 
@@ -44,6 +41,7 @@ namespace Connect.Generator.VectorToPoint
             GridList tempList = new GridList(tempGrid);
             checkingGrid = tempList;
             AddToGridSet(tempList);
+
 
             GridList addList = checkingGrid;
 
@@ -71,23 +69,25 @@ namespace Connect.Generator.VectorToPoint
 
             while (isCreating)
             {
+
                 while (_showOnlyResult && !showList.Data.IsGridComplete())
                 {
                     if (showList.Next == null)
                     {
                         yield break;
                     }
-
                     showList = showList.Next;
                 }
+
 
                 Instance.RenderGrid(showList.Data._grid);
                 count++;
 
-                _timeText.text = count.ToString();
+                _timerText.text = count.ToString();
                 _gridCountText.text = checkingGridCount.ToString();
 
                 showList = showList.Next;
+
 
                 if (showList == null)
                 {
@@ -99,13 +99,13 @@ namespace Connect.Generator.VectorToPoint
         }
 
         private List<Point> directionChecks = new List<Point>()
-        { Point.up, Point.down, Point.left, Point.right};
+        { Point.up,Point.down,Point.left,Point.right };
 
         private IEnumerator SolvePaths()
         {
             bool canSolve = true;
-            int iterationPerFrame = (int)speedMultiplier;
-            int currentIteration = 0;
+            int iterPerFrame = (int)(speedMultipler);
+            int currentIter = 0;
 
             GridList solveList = checkingGrid;
             GridList resultGridList;
@@ -132,11 +132,11 @@ namespace Connect.Generator.VectorToPoint
                     checkingDirection = item.CurrentPos + direction;
 
                     if (item.IsInsideGrid(checkingDirection)
-                        && item._grid[checkingDirection.x, checkingDirection.y] == -1
-                        && item.IsNotNeighbours(checkingDirection))
+                        && item._grid[checkingDirection.x,checkingDirection.y] == -1
+                        && item.IsNotNeighbour(checkingDirection)
+                        )
                     {
-                        tempGrid = new GridData(checkingDirection.x,
-                                   checkingDirection.y, item.ColorId, item);
+                        tempGrid = new GridData(checkingDirection.x, checkingDirection.y, item.ColorId, item);
                         tempList = new GridList(tempGrid);
 
                         if (!GridSet.Contains(tempList))
@@ -154,8 +154,7 @@ namespace Connect.Generator.VectorToPoint
                 {
                     if (item.FlowLength() > 2)
                     {
-                        tempGrid = new GridData(emptyPos.x, emptyPos.y,
-                                                item.ColorId + 1, item);
+                        tempGrid = new GridData(emptyPos.x, emptyPos.y, item.ColorId + 1, item);
                         tempList = new GridList(tempGrid);
 
                         if (!GridSet.Contains(tempList))
@@ -171,11 +170,11 @@ namespace Connect.Generator.VectorToPoint
 
                 item.IsSolved = true;
 
-                currentIteration++;
+                currentIter++;
 
-                if (currentIteration > iterationPerFrame * Time.deltaTime)
+                if (currentIter > iterPerFrame * Time.deltaTime)
                 {
-                    currentIteration = 0;
+                    currentIter = 0;
                     yield return null;
                 }
 
@@ -186,7 +185,6 @@ namespace Connect.Generator.VectorToPoint
         private void AddToGridSet(GridList addList)
         {
             GridList tempList;
-
             foreach (var item in addList.Data.GetSimilar())
             {
                 tempList = new GridList(item);
@@ -215,7 +213,7 @@ namespace Connect.Generator.VectorToPoint
     public class GridSetComparer : IEqualityComparer<GridList>
     {
         private static Point[] directionChecks = new Point[]
-        { Point.up, Point.left, Point.down, Point.right};
+        { Point.up,Point.left,Point.down,Point.right };
 
         public bool Equals(GridList x, GridList y)
         {
@@ -251,13 +249,13 @@ namespace Connect.Generator.VectorToPoint
                         return false;
                     }
 
-                    bool canCheck = firstGrid[pos.x, pos.y] != -1; 
+                    bool canCheck = firstGrid[pos.x, pos.y] != -1;
 
-                    if (canCheck && colorSwap[firstGrid[pos.x, pos.y]] != -1)
+                    if (canCheck && colorSwap[firstGrid[pos.x,pos.y]] == -1)
                     {
                         colorSwap[firstGrid[pos.x, pos.y]] = secondGrid[pos.x, pos.y];
                     }
-                    else if (canCheck)
+                    else if(canCheck)
                     {
                         if (colorSwap[firstGrid[pos.x, pos.y]] != secondGrid[pos.x, pos.y])
                         {
@@ -277,7 +275,7 @@ namespace Connect.Generator.VectorToPoint
 
         public int GetHashCode(GridList obj)
         {
-            bool[,,] graph = new bool[GridData.LevelSize, GridData.LevelSize, 4];
+            bool[,,] graph = new bool[GridData.LevelSize,GridData.LevelSize,4];
 
             Point startPos, checkPos;
 
@@ -295,9 +293,9 @@ namespace Connect.Generator.VectorToPoint
                         for (int d = 0; d < directionChecks.Length; d++)
                         {
                             checkPos = directionChecks[d] + startPos;
-                            graph[i, j, d] = obj.Data.IsInsideGrid(checkPos) &&
-                                obj.Data._grid[checkPos.x, checkPos.y] ==
-                                obj.Data._grid[startPos.x, startPos.y];
+                            graph[i,j,d] = obj.Data.IsInsideGrid(checkPos) &&
+                               obj.Data._grid[checkPos.x, checkPos.y] ==
+                               obj.Data._grid[startPos.x, startPos.y];
                         }
                     }
                     else
@@ -309,8 +307,7 @@ namespace Connect.Generator.VectorToPoint
                     }
                 }
             }
-
-            return GetHashCodeBool3D(graph);
+            return GetHashCodeBool3D(graph);            
         }
 
         public int GetHashCodeBool3D(bool[,,] arr)
@@ -353,12 +350,14 @@ namespace Connect.Generator.VectorToPoint
 
             return BitConverter.ToString(byteArray).GetHashCode();
         }
+
     }
+
 
     public class GridData
     {
         private static Point[] directionChecks = new Point[]
-        { Point.up, Point.down, Point.left, Point.right};
+        { Point.up,Point.down,Point.left,Point.right };
 
         public int[,] _grid;
         public bool IsSolved;
@@ -368,37 +367,37 @@ namespace Connect.Generator.VectorToPoint
 
         public GridData(int i, int j, int levelSize)
         {
-            _grid = new int[levelSize, levelSize];
+            _grid = new int[levelSize,levelSize];
 
             for (int a = 0; a < levelSize; a++)
             {
                 for (int b = 0; b < levelSize; b++)
                 {
-                    _grid[a, b] = -1;
+                    _grid[a,b] = -1;
                 }
             }
             IsSolved = false;
             CurrentPos = new Point(i, j);
             ColorId = 0;
-            _grid[CurrentPos.x, CurrentPos.y] = ColorId;
+            _grid[CurrentPos.x,CurrentPos.y] = ColorId;
             LevelSize = levelSize;
         }
 
         public GridData(int i, int j, int passedColor, GridData gridCopy)
         {
-            _grid = new int[LevelSize, LevelSize];
+            _grid = new int[LevelSize,LevelSize];
 
             for (int a = 0; a < LevelSize; a++)
             {
                 for (int b = 0; b < LevelSize; b++)
                 {
-                    _grid[a, b] = gridCopy._grid[a, b];
+                    _grid[a,b] = gridCopy._grid[a,b];
                 }
             }
 
             CurrentPos = new Point(i, j);
             ColorId = passedColor;
-            _grid[CurrentPos.x, CurrentPos.y] = ColorId;
+            _grid[CurrentPos.x,CurrentPos.y] = ColorId;
             IsSolved = false;
         }
 
@@ -411,8 +410,7 @@ namespace Connect.Generator.VectorToPoint
         {
             foreach (var item in _grid)
             {
-                if (item == -1)
-                    return false;
+                if (item == -1) return false;
             }
 
             for (int i = 0; i <= ColorId; i++)
@@ -427,22 +425,24 @@ namespace Connect.Generator.VectorToPoint
 
                 if (result < 3)
                     return false;
+
             }
 
             return true;
         }
 
-        public bool IsNotNeighbours(Point pos)
+        public bool IsNotNeighbour(Point pos)
         {
+
             for (int i = 0; i < LevelSize; i++)
             {
                 for (int j = 0; j < LevelSize; j++)
                 {
-                    if (_grid[i, j] == ColorId && new Point(i, j) != CurrentPos)
+                    if (_grid[i,j] == ColorId && new Point(i,j) != CurrentPos)
                     {
                         for (int p = 0; p < directionChecks.Length; p++)
                         {
-                            if (pos - new Point(i, j) == directionChecks[p])
+                            if(pos - new Point(i,j) == directionChecks[p])
                             {
                                 return false;
                             }
@@ -462,10 +462,8 @@ namespace Connect.Generator.VectorToPoint
             {
                 for (int b = 0; b < LevelSize; b++)
                 {
-                    if (_grid[a, b] == -1)
-                    {
-                        result.Add(new Point(a, b));
-                    }
+                    if (_grid[a,b] == -1)
+                        result.Add(new Point(a,b));
                 }
             }
 
@@ -475,7 +473,6 @@ namespace Connect.Generator.VectorToPoint
         public int FlowLength()
         {
             int result = 0;
-
             foreach (var item in _grid)
             {
                 if (item == ColorId)
@@ -496,7 +493,7 @@ namespace Connect.Generator.VectorToPoint
                 addData = new GridData(CurrentPos.x, CurrentPos.y, ColorId, this);
                 addData.Rotate(i);
                 result.Add(addData);
-                addData = new GridData(addData.CurrentPos.x, addData.CurrentPos.y, addData.ColorId, addData);
+                addData = new GridData(addData.CurrentPos.x,addData.CurrentPos.y,addData.ColorId,addData);
                 addData.Flip();
                 result.Add(addData);
             }
@@ -518,11 +515,11 @@ namespace Connect.Generator.VectorToPoint
             {
                 int start = 0;
                 int end = LevelSize - 1;
-                while (start < end)
+                while(start < end)
                 {
                     int temp = _grid[i, start];
-                    _grid[i, start] = _grid[i, end];
-                    _grid[i, end] = temp;
+                    _grid[i,start] = _grid[i,end];
+                    _grid[i,end] = temp;
                     start++;
                     end--;
                 }
@@ -530,15 +527,16 @@ namespace Connect.Generator.VectorToPoint
 
             for (int i = 0; i < LevelSize; i++)
             {
-                for (int j = 0; j < LevelSize; j++)
+                for (int j = i; j < LevelSize; j++)
                 {
                     int temp = _grid[i, j];
-                    _grid[i, j] = _grid[j, i];
-                    _grid[j, i] = temp;
+                    _grid[i,j] = _grid[j,i];
+                    _grid[j,i] = temp;
                 }
             }
 
             CurrentPos = Rotate(CurrentPos);
+
         }
 
         private Point Rotate(Point pos)
@@ -549,8 +547,10 @@ namespace Connect.Generator.VectorToPoint
             return result;
         }
 
+
         public void Flip()
         {
+
             int tempColor;
             Point firstPos, secondPos;
 
@@ -559,9 +559,9 @@ namespace Connect.Generator.VectorToPoint
                 for (int j = 0; j < LevelSize; j++)
                 {
                     firstPos = new Point(i, j);
-                    tempColor = _grid[firstPos.x, firstPos.y];
+                    tempColor = _grid[firstPos.x,firstPos.y];
                     secondPos = Flip(firstPos);
-                    _grid[firstPos.x, firstPos.y] = _grid[secondPos.x, secondPos.y];
+                    _grid[firstPos.x,firstPos.y] = _grid[secondPos.x,secondPos.y];
                     _grid[secondPos.x, secondPos.y] = tempColor;
                 }
             }
@@ -576,4 +576,3 @@ namespace Connect.Generator.VectorToPoint
         }
     }
 }
-

@@ -1,22 +1,19 @@
-using Connect.Generator;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using TMPro;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Connect.Generator.AllNeighbours
 {
     public class AllNeighbours : MonoBehaviour, GenerateMethod
     {
-        [SerializeField] private TMP_Text _timeText, _gridCountText;
+        [SerializeField] private TMP_Text _timerText, _gridCountText;
         [SerializeField] private bool _showOnlyResult;
         private List<GridData> checkingGrid;
         private LevelGenerator Instance;
         private bool isCreating;
 
-        [SerializeField] private float speedMultiplier;
+        [SerializeField] private float speedMultipler;
         [SerializeField] private float speed;
 
         private void Start()
@@ -54,20 +51,21 @@ namespace Connect.Generator.AllNeighbours
                     yield break;
                 }
 
+
                 while (_showOnlyResult && !checkingGrid[count].IsGridComplete())
                 {
                     count++;
-
                     if (count == checkingGrid.Count)
                     {
                         yield break;
                     }
                 }
 
+
                 Instance.RenderGrid(checkingGrid[count]._grid);
                 count++;
 
-                _timeText.text = count.ToString();
+                _timerText.text = count.ToString();
                 _gridCountText.text = checkingGrid.Count.ToString();
 
                 yield return new WaitForSeconds(speed);
@@ -75,13 +73,13 @@ namespace Connect.Generator.AllNeighbours
         }
 
         private List<Point> directionChecks = new List<Point>()
-         { Point.up, Point.down, Point.left, Point.right};
+        { Point.up,Point.down,Point.left,Point.right };
 
         private IEnumerator SolvePaths()
         {
             bool canSolve = true;
-            int iterationPerFrame = (int)(speedMultiplier / speed);
-            int currentIteration = 0;
+            int iterPerFrame = (int)(speedMultipler / speed);
+            int currentIter = 0;
 
             while (canSolve)
             {
@@ -112,10 +110,12 @@ namespace Connect.Generator.AllNeighbours
 
                         if (item.IsInsideGrid(checkingDirection)
                             && item._grid[checkingDirection] == -1
-                            && item.IsNotNeighbours(checkingDirection))
+                            && item.IsNotNeighbour(checkingDirection)
+                            )
                         {
                             checkingGrid.Insert(posIndex + insertIndex,
-                                new GridData(checkingDirection.x, checkingDirection.y, item.ColorId, item)
+                                new GridData(checkingDirection.x, checkingDirection.y,
+                                item.ColorId, item)
                                 );
                             insertIndex++;
                         }
@@ -126,7 +126,8 @@ namespace Connect.Generator.AllNeighbours
                         if (item.FlowLength() > 2)
                         {
                             checkingGrid.Insert(posIndex + insertIndex,
-                                new GridData(emptyPos.x, emptyPos.y, item.ColorId + 1, item)
+                                new GridData(emptyPos.x, emptyPos.y,
+                                item.ColorId + 1, item)
                                 );
                             insertIndex++;
                         }
@@ -134,13 +135,12 @@ namespace Connect.Generator.AllNeighbours
 
                     item.IsSolved = true;
 
-                    currentIteration++;
+                    currentIter++;
 
-                    if (currentIteration > iterationPerFrame)
+                    if (currentIter > iterPerFrame)
                     {
-                        currentIteration = 0;
+                        currentIter = 0;
                         yield return new WaitForSeconds(speed);
-
                     }
                 }
             }
@@ -150,7 +150,7 @@ namespace Connect.Generator.AllNeighbours
     public class GridData
     {
         private static List<Point> directionChecks = new List<Point>()
-          { Point.up, Point.down, Point.left, Point.right};
+        { Point.up,Point.down,Point.left,Point.right };
 
         public Dictionary<Point, int> _grid;
         public bool IsSolved;
@@ -198,8 +198,7 @@ namespace Connect.Generator.AllNeighbours
         {
             foreach (var item in _grid)
             {
-                if (item.Value == -1)
-                    return false;
+                if (item.Value == -1) return false;
             }
 
             for (int i = 0; i <= ColorId; i++)
@@ -214,17 +213,17 @@ namespace Connect.Generator.AllNeighbours
 
                 if (result < 3)
                     return false;
+
             }
 
             return true;
         }
 
-        public bool IsNotNeighbours(Point pos)
+        public bool IsNotNeighbour(Point pos)
         {
             foreach (var item in _grid)
             {
                 if (item.Value == ColorId && item.Key != CurrentPos)
-
                 {
                     foreach (var direction in directionChecks)
                     {
@@ -255,7 +254,6 @@ namespace Connect.Generator.AllNeighbours
         public int FlowLength()
         {
             int result = 0;
-
             foreach (var item in _grid)
             {
                 if (item.Value == ColorId)
@@ -264,5 +262,5 @@ namespace Connect.Generator.AllNeighbours
 
             return result;
         }
-    }
+    } 
 }

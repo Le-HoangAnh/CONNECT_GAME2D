@@ -1,5 +1,4 @@
 using Connect.Common;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,7 +28,7 @@ namespace Connect.Core
         private void Init()
         {
             CurrentStage = 1;
-            CurrentLevel = 1;
+            CurrentLevel= 1;
 
             Levels = new Dictionary<string, LevelData>();
 
@@ -38,6 +37,7 @@ namespace Connect.Core
                 Levels[item.LevelName] = item;
             }
         }
+
 
         #endregion
 
@@ -56,13 +56,13 @@ namespace Connect.Core
         {
             string levelName = "Level" + CurrentStage.ToString() + level.ToString();
 
-            if (level == 1)
+            if(level == 1)
             {
                 PlayerPrefs.SetInt(levelName, 1);
                 return true;
             }
 
-            if (PlayerPrefs.HasKey(levelName))
+            if(PlayerPrefs.HasKey(levelName)) 
             {
                 return PlayerPrefs.GetInt(levelName) == 1;
             }
@@ -75,12 +75,12 @@ namespace Connect.Core
         {
             CurrentLevel++;
 
-            if (CurrentLevel == 51)
+            if(CurrentLevel == 51)
             {
                 CurrentLevel = 1;
                 CurrentStage++;
 
-                if (CurrentStage == 0)
+                if(CurrentStage == 8)
                 {
                     CurrentStage = 1;
                     GoToMainMenu();
@@ -107,7 +107,7 @@ namespace Connect.Core
         {
             string levelName = "Level" + CurrentStage.ToString() + CurrentLevel.ToString();
 
-            if (Levels.ContainsKey(levelName))
+            if(Levels.ContainsKey(levelName))
             {
                 return Levels[levelName];
             }
@@ -120,18 +120,18 @@ namespace Connect.Core
         #region SCENE_LOAD
 
         private const string MainMenu = "MainMenu";
-        private const string GamePlay = "GamePlay";
+        private const string Gameplay = "Gameplay";
 
         public void GoToMainMenu()
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(MainMenu);
         }
 
-        public void GoToGamePlay()
+        public void GoToGameplay()
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(GamePlay);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(Gameplay);
         }
 
         #endregion
-    }
+    } 
 }

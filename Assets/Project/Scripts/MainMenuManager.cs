@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -47,8 +45,10 @@ namespace Connect.Core
         [HideInInspector]
         public Color CurrentColor;
 
-        [SerializeField] private TMP_Text _levelTitleText;
-        [SerializeField] private Image _levelTitleImage;
+        [SerializeField]
+        private TMP_Text _levelTitleText;
+        [SerializeField]
+        private Image _levelTitleImage;
 
         public void ClickedStage(string stageName, Color stageColor)
         {
@@ -59,5 +59,6 @@ namespace Connect.Core
             _levelTitleImage.color = CurrentColor;
             LevelOpened?.Invoke();
         }
-    }
+    } 
 }
+

@@ -1,6 +1,3 @@
-using Connect.Core;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,7 +32,7 @@ namespace Connect.Core
         private void LevelOpened()
         {
             string gameObjectName = gameObject.name;
-            string[] parts = gameObjectName.Split('_');
+            string[]parts = gameObjectName.Split('_');
             _levelText.text = parts[parts.Length - 1];
             currentLevel = int.Parse(_levelText.text);
             isLevelUnlocked = GameManager.Instance.IsLevelUnlocked(currentLevel);
@@ -46,12 +43,10 @@ namespace Connect.Core
         private void Clicked()
         {
             if (!isLevelUnlocked)
-            {
                 return;
-            }
 
             GameManager.Instance.CurrentLevel = currentLevel;
-            GameManager.Instance.GoToGamePlay();
+            GameManager.Instance.GoToGameplay();
         }
-    }
+    } 
 }

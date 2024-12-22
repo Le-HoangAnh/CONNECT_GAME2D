@@ -1,9 +1,6 @@
-using Connect.Generator;
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace Connect.Generator.RandomSpawning
@@ -19,6 +16,7 @@ namespace Connect.Generator.RandomSpawning
             Instance = GetComponent<LevelGenerator>();
             currentGrid = new Dictionary<Point, int>();
         }
+
         public void Generate()
         {
             StartCoroutine(SpawnRandom());
@@ -36,7 +34,7 @@ namespace Connect.Generator.RandomSpawning
                     ResetGrid();
                 }
                 Instance.RenderGrid(currentGrid);
-                yield return new WaitForSeconds(0.16f);
+                yield return new WaitForSeconds(0.125f);
             }
         }
 
@@ -54,7 +52,7 @@ namespace Connect.Generator.RandomSpawning
         }
 
         private List<Point> directions = new List<Point>()
-         { Point.up, Point.down, Point.left, Point.right};
+    { Point.up,Point.down,Point.left,Point.right};
 
         private bool SetStartNodes()
         {
@@ -97,5 +95,5 @@ namespace Connect.Generator.RandomSpawning
 
             return true;
         }
-    }
+    } 
 }
